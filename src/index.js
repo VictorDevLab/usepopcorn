@@ -8,11 +8,7 @@ function Test() {
   const [songRating, setSongRating] = useState(0);
   return (
     <div>
-      <StarRating
-        maxRating={10}
-        color="green"
-        onSetSongRating={setSongRating}
-      />
+      <StarRating maxRating={10} color="green" onSetRating={setSongRating} />
       <p>You rated this song {songRating}</p>
     </div>
   );
