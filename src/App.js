@@ -176,7 +176,7 @@ export default function App() {
 }
 
 function Loader() {
-  return <p className="loader">Loading...</p>;
+  return <p className="loader"></p>;
 }
 
 function ErrorMessage({ message }) {
