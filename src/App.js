@@ -78,6 +78,9 @@ export default function App() {
   const handleDeleteWatched = (id) => {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   };
+
+  useEffect(function () {});
+
   useEffect(
     function () {
       //abort controller browser api
@@ -104,6 +107,7 @@ export default function App() {
           setError("");
         } catch (err) {
           if (err.name !== "AbortError") {
+            console.log(err.message);
             setError(err.message);
           }
         } finally {
@@ -115,11 +119,15 @@ export default function App() {
         setError("");
         return;
       }
+
+      //close the movie details before calling the function
+      handleCloseMovie();
       //calling the function
+
       fetchMovies();
       //clean up func, this will cancel a request if another request is made
       //we want to cancel a request every time a new request comes in
-
+      //so no more race conditions, and we prevent unnecessary data from being fetched
       return function () {
         controller.abort();
       };
@@ -136,13 +144,14 @@ export default function App() {
       </NavBar>
 
       <Main>
-        {/* mutually exclusive, only one will be true */}
-        {isLoading && <Loader />}
-        {!isLoading && !error && (
-          <MovieList movies={movies} onSelectMovie={handleSelectedMovie} />
-        )}
-        {error && <ErrorMessage message={error} />}
-
+        <Box>
+          {/* mutually exclusive, only one will be true */}
+          {isLoading && <Loader />}
+          {!isLoading && !error && (
+            <MovieList movies={movies} onSelectMovie={handleSelectedMovie} />
+          )}
+          {error && <ErrorMessage message={error} />}
+        </Box>
         <Box>
           {selectedId ? (
             <MovieDetails
@@ -310,6 +319,24 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     onAddWatched(newWatchedMovie);
     onCloseMovie();
   };
+
+  useEffect(
+    function () {
+      function callback(e) {
+        if (e.code === "Escape") {
+          onCloseMovie();
+        }
+      }
+      document.addEventListener("keydown", callback);
+      //as soon as the movieDetails unmounts or re-renders we remove the event listener
+      //to avoid many event listener in our DOM that might cause memory issues
+      return function () {
+        //the function  to be removed must be the same as the one added event listener on
+        document.removeEventListener("keydown", callback);
+      };
+    },
+    [onCloseMovie]
+  );
 
   useEffect(
     function () {
