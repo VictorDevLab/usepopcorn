@@ -54,7 +54,7 @@ const average = (arr) =>
 const KEY = "356eae85";
 
 export default function App() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState("infinity");
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -93,23 +93,27 @@ export default function App() {
           setError("");
           const res = await fetch(
             `http://www.omdbapi.com/?i=tt3896198&apikey=${KEY}&s=${query}`,
+            //to cancel a req if another request is made
             { signal: controller.signal }
           );
           //error handling
           if (!res.ok)
             throw new Error("Something went wrong with fetching movies");
-
+          //convert data into json
           const data = await res.json();
-
+          //you can fetch a movie that does not exist
           if (data.Response === "False") throw new Error("Movie not Found");
 
           setMovies(data.Search);
+
           setError("");
         } catch (err) {
+          //once a request is cancelled an abort controller throws an error,
           if (err.name !== "AbortError") {
             console.log(err.message);
             setError(err.message);
           }
+          //happens irregardles of whether the request is successfull or not
         } finally {
           setIsLoading(false);
         }
