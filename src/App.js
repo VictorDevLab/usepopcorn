@@ -171,7 +171,7 @@ function Logo() {
   );
 }
 function Search({ query, setQuery }) {
-  //selecting dom elements
+  //selecting dom elements using useref
   const inputEl = useRef(null);
 
   useEffect(
