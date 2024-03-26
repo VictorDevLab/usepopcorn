@@ -1,7 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useState } from "react";
 import StarRating from "./StarRating";
-import { cleanup } from "@testing-library/react";
+// import { cleanup } from "@testing-library/react";
+import { useMovies } from "./useMovies";
+import { useLocalStorageState } from "./useLocalStorageState";
+import { useKey } from "./useKey";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
@@ -10,27 +13,19 @@ const KEY = "356eae85";
 
 export default function App() {
   const [query, setQuery] = useState("");
-  const [movies, setMovies] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // const [watched, setWatched] = useState([]);
-  //pass a callback func that react can call later (lazy evaluation)
-  const [watched, setWatched] = useState(function () {
-    const storedValue = localStorage.getItem("watched");
-    return JSON.parse(storedValue);
-  });
-  //the reason for storing the movie id is because the movies we get from the search are very limited
-
   const [selectedId, setSelectedId] = useState(null);
+  //custom hook
+  const { movies, isLoading, error } = useMovies(query);
+
+  const [watched, setWatched] = useLocalStorageState([], "watched");
 
   const handleSelectedMovie = (id) => {
     setSelectedId((selectedId) => (id === selectedId ? null : id));
   };
-
-  const handleCloseMovie = () => {
+  //important to note that arrow functions are not hoisted
+  function handleCloseMovie() {
     setSelectedId(null);
-  };
+  }
 
   const handleAddWatched = (movie) => {
     setWatched((watched) => [...watched, movie]);
@@ -40,71 +35,6 @@ export default function App() {
   const handleDeleteWatched = (id) => {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   };
-
-  useEffect(
-    function () {
-      localStorage.setItem("watched", JSON.stringify(watched));
-    },
-    [watched]
-  );
-
-  useEffect(
-    function () {
-      //abort controller browser api
-
-      const controller = new AbortController();
-
-      async function fetchMovies() {
-        try {
-          setIsLoading(true);
-          setError("");
-          const res = await fetch(
-            `http://www.omdbapi.com/?i=tt3896198&apikey=${KEY}&s=${query}`,
-            //to cancel a req if another request is made
-            { signal: controller.signal }
-          );
-          //error handling
-          if (!res.ok)
-            throw new Error("Something went wrong with fetching movies");
-          //convert data into json
-          const data = await res.json();
-          //you can fetch a movie that does not exist
-          if (data.Response === "False") throw new Error("Movie not Found");
-
-          setMovies(data.Search);
-
-          setError("");
-        } catch (err) {
-          //once a request is cancelled an abort controller throws an error,
-          if (err.name !== "AbortError") {
-            console.log(err.message);
-            setError(err.message);
-          }
-          //happens irregardles of whether the request is successfull or not
-        } finally {
-          setIsLoading(false);
-        }
-      }
-      if (query.length < 3) {
-        setMovies([]);
-        setError("");
-        return;
-      }
-
-      //close the movie details before calling the function
-      handleCloseMovie();
-      //calling the function
-
-      fetchMovies();
-      //clean up func, this will cancel a request if another request is made
-      //we want to cancel a request every time a new request comes in
-      //so no more race conditions, and we prevent unnecessary data from being fetched
-      return function () {
-        controller.abort();
-      };
-    },
-    [query]
-  );
 
   return (
     <>
@@ -174,21 +104,11 @@ function Search({ query, setQuery }) {
   //selecting dom elements using useref
   const inputEl = useRef(null);
 
-  useEffect(
-    function () {
-      function callback(e) {
-        if (document.activeElement === inputEl.current) return;
-        if (e.code === "Enter") {
-          inputEl.current.focus();
-          setQuery("");
-        }
-      }
-      document.addEventListener("keydown", callback);
-      //cleanup function
-      return () => document.removeEventListener("keydown", callback);
-    },
-    [setQuery]
-  );
+  useKey("Enter", function () {
+    if (document.activeElement === inputEl.current) return;
+    inputEl.current.focus();
+    setQuery("");
+  });
 
   return (
     <input
@@ -311,23 +231,7 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     onCloseMovie();
   };
 
-  useEffect(
-    function () {
-      function callback(e) {
-        if (e.code === "Escape") {
-          onCloseMovie();
-        }
-      }
-      document.addEventListener("keydown", callback);
-      //as soon as the movieDetails unmounts or re-renders we remove the event listener
-      //to avoid many event listener in our DOM that might cause memory issues
-      return function () {
-        //the function  to be removed must be the same as the one added event listener on
-        document.removeEventListener("keydown", callback);
-      };
-    },
-    [onCloseMovie]
-  );
+  useKey("Escape", onCloseMovie);
 
   useEffect(
     function () {
