@@ -56,10 +56,12 @@ const KEY = "356eae85";
 export default function App() {
   const [query, setQuery] = useState("infinity");
   const [movies, setMovies] = useState([]);
+  //
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  //the reason for storing the movie id is because the movies we get from the search are very limited
+
+  //the reason for storing the movie id is because the movies we get from the search query are very limited
 
   const [selectedId, setSelectedId] = useState(null);
 
@@ -79,18 +81,16 @@ export default function App() {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   };
 
-  useEffect(function () {});
-
   useEffect(
     function () {
       //abort controller browser api
-
       const controller = new AbortController();
-
+      //should be asynchronous function
       async function fetchMovies() {
         try {
           setIsLoading(true);
           setError("");
+          //await when fetching data
           const res = await fetch(
             `http://www.omdbapi.com/?i=tt3896198&apikey=${KEY}&s=${query}`,
             //to cancel a req if another request is made
@@ -99,18 +99,18 @@ export default function App() {
           //error handling
           if (!res.ok)
             throw new Error("Something went wrong with fetching movies");
-          //convert data into json
+          //res.json() method returns a promise which you must `await` to get the data
           const data = await res.json();
           //you can fetch a movie that does not exist
           if (data.Response === "False") throw new Error("Movie not Found");
 
           setMovies(data.Search);
-
           setError("");
+          //if the request is cancelled, this line will not execute
+          //also a catch takes err as an argument
         } catch (err) {
           //once a request is cancelled an abort controller throws an error,
           if (err.name !== "AbortError") {
-            console.log(err.message);
             setError(err.message);
           }
           //happens irregardles of whether the request is successfull or not
@@ -126,12 +126,12 @@ export default function App() {
 
       //close the movie details before calling the function
       handleCloseMovie();
-      //calling the function
 
+      //calling the function
       fetchMovies();
       //clean up func, this will cancel a request if another request is made
       //we want to cancel a request every time a new request comes in
-      //so no more race conditions, and we prevent unnecessary data from being fetched
+      //so no race conditions, and we prevent unnecessary data from being fetched
       return function () {
         controller.abort();
       };
