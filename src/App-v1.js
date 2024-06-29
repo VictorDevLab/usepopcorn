@@ -60,9 +60,7 @@ export default function App() {
   const [watched, setWatched] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-
   //the reason for storing the movie id is because the movies we get from the search query are very limited
-
   const [selectedId, setSelectedId] = useState(null);
 
   const handleSelectedMovie = (id) => {
@@ -262,8 +260,11 @@ function Box({ children }) {
 
 function MovieList({ movies, onSelectMovie }) {
   return (
+    //use ul tags when looping to create a list for semantic meaning
     <ul className="list list-movies">
+      {/* null safe navigation operator to avoid errors when movies is null */}
       {movies?.map((movie) => (
+        //use key prop to help React identify which items have changed, are added, or are removed
         <Movie movie={movie} key={movie.imdbID} onSelectMovie={onSelectMovie} />
       ))}
     </ul>
@@ -287,6 +288,7 @@ function Movie({ movie, onSelectMovie }) {
 
 //the reason for storing the movie id is because the movies we get from the search are very limited
 function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
+  //movie is an object
   const [movie, setMovie] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [userRating, setUserRating] = useState("");
@@ -323,7 +325,7 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     onAddWatched(newWatchedMovie);
     onCloseMovie();
   };
-
+  //Escape
   useEffect(
     function () {
       function callback(e) {
@@ -342,6 +344,7 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     [onCloseMovie]
   );
 
+  //fetching movie data
   useEffect(
     function () {
       setIsLoading(true);
@@ -357,7 +360,7 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     },
     [selectedId]
   );
-
+  //changing the documents title
   useEffect(
     function () {
       if (!title) return;
